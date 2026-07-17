@@ -12,10 +12,10 @@ namespace IFRS\Models;
 
 use Carbon\Carbon;
 
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
+use IFRS\Context\EntityContext;
 use IFRS\Interfaces\Clearable;
 use IFRS\Interfaces\Assignable;
 use IFRS\Interfaces\Recyclable;
@@ -697,11 +697,7 @@ class Transaction extends Model implements Segregatable, Recyclable, Clearable, 
      */
     public function save(array $options = []): bool
     {
-        if (is_null($this->entity_id)) {
-            $entity = Auth::user()->entity;
-        } else {
-            $entity = $this->entity;
-        }
+        $entity = app(EntityContext::class)->requireEntity();
 
         if (!isset($this->exchange_rate_id) && !is_null($entity)) {
             $this->exchange_rate_id = $entity->default_rate->id;
@@ -748,7 +744,7 @@ class Transaction extends Model implements Segregatable, Recyclable, Clearable, 
         }
 
         if (!isset($this->exchange_rate_id)) {
-            $this->exchange_rate_id =  Auth::user()->entity->default_rate->id;
+            $this->exchange_rate_id = $entity->default_rate->id;
         }
 
         if ($this->isDirty('transaction_type') && $this->transaction_type != $this->getOriginal('transaction_type') && !is_null($this->id)) {
@@ -775,7 +771,7 @@ class Transaction extends Model implements Segregatable, Recyclable, Clearable, 
     public static function transactionNo(string $type, Carbon $transaction_date = null, Entity $entity = null)
     {
         if (is_null($entity)) {
-            $entity = Auth::user()->entity;
+            $entity = app(EntityContext::class)->requireEntity();
         }
 
         $periodCount = ReportingPeriod::getPeriod($transaction_date, $entity)->period_count;
