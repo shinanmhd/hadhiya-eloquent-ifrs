@@ -1,3 +1,13 @@
+## 6.1.0 - Unreleased
+
+- **BREAKING:** Require an explicit, scoped accounting entity context for entity-bound queries, model creation, transactions, balances, recycling, and reports.
+- Add stack-based `EntityContext` with safe nested execution and exception restoration.
+- Fail closed with `MissingEntityContext` when no accounting entity is active.
+- Reject cross-entity model creation with `EntityContextMismatch`.
+- Add a strict `NullEntityResolver` default and an opt-in transitional `AuthEntityResolver`.
+- Remove direct authentication-based entity resolution from ledger models and reports.
+- Add unauthenticated transaction, model, report, isolation, and compatibility coverage.
+
 ## 6.0.0 - 2026-07-01
 
 - Add Laravel 13 Compatibility

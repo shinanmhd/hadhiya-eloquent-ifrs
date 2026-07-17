@@ -23,6 +23,7 @@ This package is a community initiative of [microbooks.io](https://microbooks.io)
       - [For development](#for-development)
   - [Configuration](#configuration)
   - [Usage](#usage)
+    - [Explicit Entity Context](#explicit-entity-context)
     - [DB Collision](#db-collision)
     - [Examples](#examples)
   - [Changelog](#changelog)
@@ -107,6 +108,77 @@ php artisan vendor:publish
 ## Usage
 Full documentation for this package can be found [here](https://ekmungai.github.io/ifrs-docs/).
 
+### Explicit Entity Context
+
+Entity-bound ledger operations require an explicit accounting entity context. The
+default resolver is strict: queries, model creation, transactions, balances, and
+reports throw `MissingEntityContext` when no entity is active. Authentication does
+not select an accounting entity unless the compatibility resolver is deliberately
+enabled.
+
+```php
+use IFRS\Context\EntityContext;
+use IFRS\Models\Account;
+use IFRS\Models\Entity;
+use IFRS\Transactions\JournalEntry;
+
+$entity = Entity::findOrFail($entityId);
+
+// Authorize access before entering the accounting context.
+Gate::authorize('operate-ledger', $entity);
+
+app(EntityContext::class)->runForEntity($entity, function () {
+    $account = Account::create([
+        'name' => 'Bank Account',
+        'account_type' => Account::BANK,
+        'category_id' => null,
+    ]);
+
+    // Create and post transactions or generate reports here.
+});
+```
+
+`runForEntity()` is stack-based. Nested contexts restore the outer entity, including
+when the callback throws. This makes it suitable for long-running workers as long as
+each job, command, webhook, or scheduled task resolves and authorizes its entity
+before entering the callback:
+
+```php
+public function handle(EntityContext $context): void
+{
+    $entity = Entity::findOrFail($this->entityId);
+
+    $context->runForEntity($entity, function () {
+        // Process this job only for its serialized entity identifier.
+    });
+}
+```
+
+The context provides tenant isolation, not authorization. Applications remain
+responsible for checking whether the actor may access the selected entity. A supplied
+`entity_id` that conflicts with the active context throws `EntityContextMismatch`.
+
+For a temporary migration period, applications can opt into the previous
+authentication-based behavior:
+
+```php
+// config/ifrs.php
+'entity_context' => [
+    'resolver' => IFRS\Context\AuthEntityResolver::class,
+],
+```
+
+This compatibility resolver is transitional and is not recommended for workers,
+webhooks, multi-entity operations, or Hadhiya production. Prefer replacing user
+impersonation and manual global-scope manipulation with `runForEntity()`:
+
+```php
+// Before: Auth::login($entityUser), then run ledger code.
+// Before: remove or reflectively modify EntityScope for sessionless work.
+
+app(EntityContext::class)->runForEntity($entity, fn () => $service->post($command));
+```
+
 ### DB Collision
 Publish configuration file with `vendor:publish` if your `User` model is different from `App\User` and update the namespace of your `User` model.
 
@@ -144,15 +216,18 @@ $entity = Entity::create([
     "name" => "Example Company",
 ]);
 
-//Entities require a reporting currency
-$currency = Currency::create([
-    "name" => "Euro",
-    "currency_code" => "EUR"
-]);
+app(\IFRS\Context\EntityContext::class)->runForEntity($entity, function () use ($entity) {
+    // Entities require a reporting currency.
+    $currency = Currency::create([
+        "name" => "Euro",
+        "currency_code" => "EUR"
+    ]);
 
-// Set the currency as the Entity's Reporting Currency 
-$entity->currency_id = $currency->id;
-$entity->save();
+    $entity->currency_id = $currency->id;
+    $entity->save();
+
+    // Run the remaining entity-bound examples inside this callback.
+});
 ```
 We also need the VAT Rates that apply to the Entity:
 
