@@ -3,7 +3,9 @@
 namespace IFRS\Tests\Unit;
 
 use IFRS\Context\EntityContext;
+use IFRS\Context\NullEntityResolver;
 use IFRS\Exceptions\MissingEntityContext;
+use IFRS\Exceptions\EntityContextMismatch;
 use IFRS\Models\Account;
 use IFRS\Models\Currency;
 use IFRS\Models\Entity;
@@ -15,6 +17,7 @@ class EntityContextScopeTest extends TestCase
     public function testEntityBoundQueriesFailClosedWithoutContext(): void
     {
         Auth::logout();
+        config()->set('ifrs.entity_context.resolver', NullEntityResolver::class);
         $this->app->forgetScopedInstances();
 
         $this->assertNull($this->app->make(EntityContext::class)->current());
@@ -27,12 +30,7 @@ class EntityContextScopeTest extends TestCase
     public function testExplicitContextIsolatesQueriesBetweenEntities(): void
     {
         $first = Auth::user()->entity;
-        $second = factory(Entity::class)->create();
-        $secondCurrency = factory(Currency::class)->create([
-            'entity_id' => $second->id,
-        ]);
-        $second->currency_id = $secondCurrency->id;
-        $second->save();
+        $second = $this->createEntityWithCurrency();
 
         $context = $this->app->make(EntityContext::class);
 
@@ -63,5 +61,55 @@ class EntityContextScopeTest extends TestCase
                 Account::query()->distinct()->pluck('entity_id')->all()
             );
         });
+    }
+
+    public function testActiveContextAssignsEntityDuringCreation(): void
+    {
+        $second = $this->createEntityWithCurrency();
+        $currency = $second->currency;
+
+        $account = $this->app->make(EntityContext::class)->runForEntity(
+            $second,
+            fn () => factory(Account::class)->create([
+                'entity_id' => null,
+                'currency_id' => $currency->id,
+            ])
+        );
+
+        $this->assertSame($second->id, $account->entity_id);
+    }
+
+    public function testConflictingEntityIdIsRejectedBeforeCreation(): void
+    {
+        $first = Auth::user()->entity;
+        $second = $this->createEntityWithCurrency();
+        $currency = $second->currency;
+
+        $this->expectException(EntityContextMismatch::class);
+
+        $this->app->make(EntityContext::class)->runForEntity(
+            $second,
+            fn () => factory(Account::class)->create([
+                'entity_id' => $first->id,
+                'currency_id' => $currency->id,
+            ])
+        );
+    }
+
+    private function createEntityWithCurrency(): Entity
+    {
+        $entity = factory(Entity::class)->create();
+
+        $currency = $this->app->make(EntityContext::class)->runForEntity(
+            $entity,
+            fn () => factory(Currency::class)->create([
+                'entity_id' => $entity->id,
+            ])
+        );
+        $entity->currency_id = $currency->id;
+        $entity->save();
+        $entity->setRelation('currency', $currency);
+
+        return $entity;
     }
 }

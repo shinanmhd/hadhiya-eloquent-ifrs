@@ -14,6 +14,7 @@ use IFRS\IFRSServiceProvider;
 
 use IFRS\Models\Currency;
 use IFRS\Models\ReportingPeriod;
+use IFRS\Context\AuthEntityResolver;
 
 abstract class TestCase extends Orchestra
 {
@@ -23,6 +24,7 @@ abstract class TestCase extends Orchestra
         parent::setUp();
 
         Config::set('ifrs.user_model', User::class);
+        Config::set('ifrs.entity_context.resolver', AuthEntityResolver::class);
 
         $this->loadMigrationsFrom(__DIR__ . '/../database/migrations');
 

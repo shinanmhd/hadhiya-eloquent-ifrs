@@ -167,6 +167,8 @@ class EntityContextTest extends TestCase
 
     public function testContainerUsesStrictResolverByDefault(): void
     {
+        config()->set('ifrs.entity_context.resolver', NullEntityResolver::class);
+
         $resolver = $this->app->make(EntityResolver::class);
 
         $this->assertInstanceOf(NullEntityResolver::class, $resolver);
