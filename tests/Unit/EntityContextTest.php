@@ -4,6 +4,9 @@ namespace IFRS\Tests\Unit;
 
 use IFRS\Context\EntityResolver;
 use IFRS\Exceptions\MissingEntityContext;
+use IFRS\Context\EntityContext;
+use IFRS\Context\NullEntityResolver;
+use IFRS\Context\AuthEntityResolver;
 use IFRS\Models\Entity;
 use IFRS\Tests\TestCase;
 
@@ -160,6 +163,41 @@ class EntityContextTest extends TestCase
         $resolver = new \IFRS\Context\AuthEntityResolver();
 
         $this->assertSame(\Auth::user()->entity->id, $resolver->resolve()?->id);
+    }
+
+    public function testContainerUsesStrictResolverByDefault(): void
+    {
+        $resolver = $this->app->make(EntityResolver::class);
+
+        $this->assertInstanceOf(NullEntityResolver::class, $resolver);
+    }
+
+    public function testEntityContextIsScopedToOneContainerLifecycle(): void
+    {
+        $first = $this->app->make(EntityContext::class);
+        $second = $this->app->make(EntityContext::class);
+
+        $this->assertSame($first, $second);
+    }
+
+    public function testContainerCanUseOptInAuthResolver(): void
+    {
+        config()->set('ifrs.entity_context.resolver', AuthEntityResolver::class);
+
+        $resolver = $this->app->make(EntityResolver::class);
+
+        $this->assertInstanceOf(AuthEntityResolver::class, $resolver);
+        $this->assertSame(\Auth::user()->entity->id, $resolver->resolve()?->id);
+    }
+
+    public function testInvalidResolverConfigurationFailsClearly(): void
+    {
+        config()->set('ifrs.entity_context.resolver', \stdClass::class);
+
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage(EntityResolver::class);
+
+        $this->app->make(EntityResolver::class);
     }
 
     private function entityWithId(int $id): Entity

@@ -17,6 +17,7 @@ use IFRS\Reports\IncomeStatement;
 use IFRS\Reports\BalanceSheet;
 use IFRS\Reports\TrialBalance;
 use IFRS\Reports\CashFlowStatement;
+use IFRS\Context\NullEntityResolver;
 
 return [
 
@@ -40,6 +41,20 @@ return [
      |
      */
     'user_model' => 'App\Models\User',
+
+    /*
+     |--------------------------------------------------------------------------
+     | Accounting Entity Context
+     |--------------------------------------------------------------------------
+     |
+     | Entity-bound operations fail closed unless an explicit entity context
+     | is active. Applications migrating from legacy behavior may explicitly
+     | configure IFRS\Context\AuthEntityResolver as a temporary fallback.
+     |
+     */
+    'entity_context' => [
+        'resolver' => NullEntityResolver::class,
+    ],
     
     /*
      |--------------------------------------------------------------------------
