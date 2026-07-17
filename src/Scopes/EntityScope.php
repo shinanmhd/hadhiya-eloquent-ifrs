@@ -10,7 +10,7 @@
 
 namespace IFRS\Scopes;
 
-use Illuminate\Support\Facades\Auth;
+use IFRS\Context\EntityContext;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Scope;
 use Illuminate\Database\Eloquent\Builder;
@@ -26,11 +26,8 @@ class EntityScope implements Scope
      */
     public function apply(Builder $builder, Model $model)
     {
-        $user = Auth::user();
-        if(!is_null($model->entity_id)){
-            $builder->where($model->getTable().'.entity_id', $model->entity_id);
-        }elseif(!is_null($user)){
-            $builder->where($model->getTable().'.entity_id', $user->entity->id);
-        }
+        $entityId = app(EntityContext::class)->requireEntity()->getKey();
+
+        $builder->where($model->qualifyColumn('entity_id'), $entityId);
     }
 }
