@@ -12,9 +12,9 @@ namespace IFRS\Reports;
 
 use Carbon\Carbon;
 
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
+use IFRS\Context\EntityContext;
 use IFRS\Models\Balance;
 use IFRS\Models\ReportingPeriod;
 use IFRS\Models\Entity;
@@ -117,7 +117,7 @@ class IncomeStatement extends FinancialStatement
     public static function getResults($month, $year, Entity $entity = null)
     {
         if (is_null($entity)) {
-            $entity = Auth::user()->entity;
+            $entity = app(EntityContext::class)->requireEntity();
         }
 
         $startDate = Carbon::parse($year . '-' . $month . '-01')->startOfDay();
@@ -150,7 +150,7 @@ class IncomeStatement extends FinancialStatement
     private static function getBalance(array $accountTypes, Carbon $startDate, Carbon $endDate, Entity $entity = null): float
     {
         if (is_null($entity)) {
-            $entity = Auth::user()->entity;
+            $entity = app(EntityContext::class)->requireEntity();
         }
 
         $accountTable = config('ifrs.table_prefix') . 'accounts';

@@ -10,8 +10,7 @@
 
 namespace IFRS\Reports;
 
-use Illuminate\Support\Facades\Auth;
-
+use IFRS\Context\EntityContext;
 use IFRS\Models\Entity;
 use IFRS\Models\Account;
 use IFRS\Models\ReportingPeriod;
@@ -71,8 +70,8 @@ abstract class FinancialStatement
     public function __construct(ReportingPeriod $period = null, Entity $entity = null)
     {
         if (is_null($entity)) {
-            $this->entity = Auth::user()->entity;
-        }else{
+            $this->entity = app(EntityContext::class)->requireEntity();
+        } else {
             $this->entity = $entity;
         }
         $this->reportingPeriod = is_null($period) ? $this->entity->currentReportingPeriod : $period;
