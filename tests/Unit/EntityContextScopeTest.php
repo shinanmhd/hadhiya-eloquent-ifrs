@@ -3,6 +3,7 @@
 namespace IFRS\Tests\Unit;
 
 use IFRS\Context\EntityContext;
+use IFRS\Context\AuthEntityResolver;
 use IFRS\Context\NullEntityResolver;
 use IFRS\Exceptions\MissingEntityContext;
 use IFRS\Exceptions\EntityContextMismatch;
@@ -14,6 +15,48 @@ use Illuminate\Support\Facades\Auth;
 
 class EntityContextScopeTest extends TestCase
 {
+    public function testAuthenticatedUserDoesNotBypassStrictMode(): void
+    {
+        config()->set('ifrs.entity_context.resolver', NullEntityResolver::class);
+        $this->app->forgetScopedInstances();
+
+        $this->expectException(MissingEntityContext::class);
+
+        Account::query()->count();
+    }
+
+    public function testAuthCompatibilityResolverIsOptInAtModelBoundary(): void
+    {
+        $entity = Auth::user()->entity;
+        factory(Account::class)->create([
+            'category_id' => null,
+        ]);
+        config()->set('ifrs.entity_context.resolver', AuthEntityResolver::class);
+        $this->app->forgetScopedInstances();
+
+        $this->assertSame(
+            [$entity->id],
+            Account::query()->distinct()->pluck('entity_id')->all()
+        );
+    }
+
+    public function testExplicitContextOverridesAuthCompatibilityResolver(): void
+    {
+        $authenticatedEntity = Auth::user()->entity;
+        $explicitEntity = $this->createEntityWithCurrency();
+        config()->set('ifrs.entity_context.resolver', AuthEntityResolver::class);
+        $this->app->forgetScopedInstances();
+
+        $context = $this->app->make(EntityContext::class);
+
+        $this->assertSame($authenticatedEntity->id, $context->id());
+        $context->runForEntity(
+            $explicitEntity,
+            fn () => $this->assertSame($explicitEntity->id, $context->id())
+        );
+        $this->assertSame($authenticatedEntity->id, $context->id());
+    }
+
     public function testEntityBoundQueriesFailClosedWithoutContext(): void
     {
         Auth::logout();
