@@ -47,14 +47,17 @@
             $usersTable = $this->getUsersTable();
 
             if (Schema::hasTable($usersTable)) {
-                Schema::table(
-                    $usersTable,
-                    function (Blueprint $table) {
-                        //entity
+                if (! Schema::hasColumn($usersTable, 'entity_id')) {
+                    Schema::table($usersTable, function (Blueprint $table) {
                         $table->unsignedBigInteger('entity_id')->nullable();
-                        // *permanent* deletion
+                    });
+                }
+
+                if (! Schema::hasColumn($usersTable, 'destroyed_at')) {
+                    Schema::table($usersTable, function (Blueprint $table) {
                         $table->dateTime('destroyed_at')->nullable();
-                });
+                    });
+                }
             }else{
                 Schema::create(
                     $usersTable,
@@ -97,14 +100,6 @@
             if (Schema::hasColumn($usersTable, 'created'))
             {
                 Schema::dropIfExists($usersTable);
-            }else{
-                Schema::table(
-                    $usersTable,
-                    function (Blueprint $table) {
-                        $table->dropColumn('entity_id');
-                        $table->dropColumn('destroyed_at');
-                    }
-                );
             }
         }
     }
