@@ -39,6 +39,7 @@ class EntityTest extends TestCase
         $user->save();
 
         $this->be($user);
+        $this->setEntityContext($entity);
 
         $currency = factory(Currency::class)->create([
             'name' => 'Test Currency'

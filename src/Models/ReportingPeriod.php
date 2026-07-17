@@ -12,11 +12,11 @@ namespace IFRS\Models;
 
 use Carbon\Carbon;
 
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\DB;
 
+use IFRS\Context\EntityContext;
 use IFRS\Interfaces\Recyclable;
 use IFRS\Interfaces\Segregatable;
 
@@ -90,10 +90,10 @@ class ReportingPeriod extends Model implements Segregatable, Recyclable
      * @param string|Carbon $date
      * @return ReportingPeriod
      */
-    public static function getPeriod($date = null, Entity $entity = null)
+    public static function getPeriod($date = null, ?Entity $entity = null)
     {
         if (is_null($entity)) {
-            $entity = Auth::user()->entity;
+            $entity = app(EntityContext::class)->requireEntity();
         }
 
         $year = ReportingPeriod::year($date, $entity);
@@ -113,14 +113,10 @@ class ReportingPeriod extends Model implements Segregatable, Recyclable
      *
      * @return int
      */
-    public static function year($date = null, Entity $entity = null)
+    public static function year($date = null, ?Entity $entity = null)
     {
         if (is_null($entity)) {
-            $entity = Auth::user()->entity;
-        }
-
-        if (is_null($entity)) {
-            return date("Y");
+            $entity = app(EntityContext::class)->requireEntity();
         }
 
         $year = is_null($date) ? date("Y") : date("Y", strtotime($date));
@@ -224,7 +220,7 @@ class ReportingPeriod extends Model implements Segregatable, Recyclable
      *
      * @return array $transactions
      */
-    public function prepareBalancesTranslation($forexAccountId, int $accountId = null): array
+    public function prepareBalancesTranslation($forexAccountId, ?int $accountId = null): array
     {
 
         if (Account::find($forexAccountId)->account_type != Account::EQUITY) {
@@ -313,7 +309,7 @@ class ReportingPeriod extends Model implements Segregatable, Recyclable
      *
      * @return Carbon
      */
-    public static function periodEnd($date = null, Entity $entity = null)
+    public static function periodEnd($date = null, ?Entity $entity = null)
     {
         return ReportingPeriod::periodStart($date, $entity)
             ->addYear()
@@ -325,14 +321,13 @@ class ReportingPeriod extends Model implements Segregatable, Recyclable
      *
      * @return Carbon $date
      */
-    public static function periodStart($date = null, Entity $entity = null)
+    public static function periodStart($date = null, ?Entity $entity = null)
     {
         if (is_null($entity)) {
-            if (Auth::user()) {
-                $entity = Auth::user()->entity;
-            }
+            $entity = app(EntityContext::class)->requireEntity();
         }
-        return is_null($entity) ? Carbon::parse(date("Y") . "-01-01")->startOfDay() : Carbon::create(
+
+        return Carbon::create(
             ReportingPeriod::year($date, $entity),
             $entity->year_start,
             1

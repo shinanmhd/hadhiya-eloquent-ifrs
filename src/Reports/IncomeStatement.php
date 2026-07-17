@@ -12,9 +12,9 @@ namespace IFRS\Reports;
 
 use Carbon\Carbon;
 
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
+use IFRS\Context\EntityContext;
 use IFRS\Models\Balance;
 use IFRS\Models\ReportingPeriod;
 use IFRS\Models\Entity;
@@ -60,7 +60,7 @@ class IncomeStatement extends FinancialStatement
      * @param string $endDate
      * @param Entity $entity
      */
-    public function __construct(string $startDate = null, string $endDate = null, Entity $entity = null)
+    public function __construct(?string $startDate = null, ?string $endDate = null, ?Entity $entity = null)
     {
         $this->period['startDate'] = is_null($startDate) ? ReportingPeriod::periodStart(null, $entity) : Carbon::parse($startDate);
         $this->period['endDate'] = is_null($endDate) ? ReportingPeriod::periodEnd(null, $entity) : Carbon::parse($endDate);
@@ -114,10 +114,10 @@ class IncomeStatement extends FinancialStatement
      * @param int|string year
      * @return array
      */
-    public static function getResults($month, $year, Entity $entity = null)
+    public static function getResults($month, $year, ?Entity $entity = null)
     {
         if (is_null($entity)) {
-            $entity = Auth::user()->entity;
+            $entity = app(EntityContext::class)->requireEntity();
         }
 
         $startDate = Carbon::parse($year . '-' . $month . '-01')->startOfDay();
@@ -147,10 +147,10 @@ class IncomeStatement extends FinancialStatement
      * @param int month
      * @param int year
      */
-    private static function getBalance(array $accountTypes, Carbon $startDate, Carbon $endDate, Entity $entity = null): float
+    private static function getBalance(array $accountTypes, Carbon $startDate, Carbon $endDate, ?Entity $entity = null): float
     {
         if (is_null($entity)) {
-            $entity = Auth::user()->entity;
+            $entity = app(EntityContext::class)->requireEntity();
         }
 
         $accountTable = config('ifrs.table_prefix') . 'accounts';

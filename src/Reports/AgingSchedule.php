@@ -12,8 +12,7 @@ namespace IFRS\Reports;
 
 use Carbon\Carbon;
 
-use Illuminate\Support\Facades\Auth;
-
+use IFRS\Context\EntityContext;
 use IFRS\Models\Entity;
 use IFRS\Models\Account;
 use IFRS\Models\Currency;
@@ -59,11 +58,11 @@ class AgingSchedule
      * @param string $endDate
      * @param Entity $entity
      */
-    public function __construct(string $accountType = Account::RECEIVABLE, string $endDate = null, int $currencyId = null, Entity $entity = null)
+    public function __construct(string $accountType = Account::RECEIVABLE, ?string $endDate = null, ?int $currencyId = null, ?Entity $entity = null)
     {
         if (is_null($entity)) {
-            $this->entity = Auth::user()->entity;
-        }else{
+            $this->entity = app(EntityContext::class)->requireEntity();
+        } else {
             $this->entity = $entity;
         }
         

@@ -12,8 +12,8 @@ namespace IFRS\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Support\Facades\Auth;
 
+use IFRS\Context\EntityContext;
 use IFRS\Interfaces\Recyclable;
 use IFRS\Interfaces\Segregatable;
 
@@ -96,7 +96,7 @@ class Currency extends Model implements Recyclable, Segregatable
     public function save(array $options = []): bool
     {
         if (!isset($this->entity_id)) {
-            $this->entity_id = Auth::user()->entity->id;
+            $this->entity_id = app(EntityContext::class)->requireEntity()->getKey();
         }
 
         return parent::save($options);

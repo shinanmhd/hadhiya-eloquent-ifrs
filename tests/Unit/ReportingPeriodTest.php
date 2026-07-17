@@ -72,10 +72,13 @@ class ReportingPeriodTest extends TestCase
         $user->save();
 
         $this->be($user);
+        $this->setEntityContext($user->entity);
 
         $this->assertEquals(count(ReportingPeriod::all()), 0);
 
-        $this->be(User::withoutGlobalScopes()->find(1));
+        $baseUser = User::withoutGlobalScopes()->find(1);
+        $this->be($baseUser);
+        $this->setEntityContext($baseUser->entity);
         $this->assertEquals(count(ReportingPeriod::all()), 1);
     }
 

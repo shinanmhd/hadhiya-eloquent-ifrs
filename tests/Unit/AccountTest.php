@@ -74,6 +74,7 @@ class AccountTest extends TestCase
         $user->save();
 
         $this->be($user);
+        $this->setEntityContext($user->entity);
 
         $type = $this->faker->randomElement(array_keys(config('ifrs')['accounts']));
 
@@ -88,7 +89,9 @@ class AccountTest extends TestCase
 
         $this->assertEquals(count(Account::all()), 1);
 
-        $this->be(User::withoutGlobalScopes()->find(1));
+        $baseUser = User::withoutGlobalScopes()->find(1);
+        $this->be($baseUser);
+        $this->setEntityContext($baseUser->entity);
         $this->assertEquals(count(Account::all()), 0);
     }
 
@@ -100,6 +103,7 @@ class AccountTest extends TestCase
     public function testAccountSessionlessEntityScope()
     {
         $entity = factory(Entity::class)->create();
+        $this->setEntityContext($entity);
 
         $type = $this->faker->randomElement(array_keys(config('ifrs')['accounts']));
 
@@ -111,12 +115,11 @@ class AccountTest extends TestCase
             'entity_id' => $entity->id
         ]);
 
-        // Scope applies to session user entity
-        $this->assertEquals(count(Account::all()), 0);
+        $this->assertEquals(count(Account::all()), 1);
 
         Auth::logout();
 
-        // Scope is bypassed 
+        // Explicit context remains active without an authenticated user.
         $this->assertEquals(count((new Account(['entity_id' => $entity->id]))->get()), 1);
     }
 
@@ -243,10 +246,18 @@ class AccountTest extends TestCase
         $this->assertEquals(config('ifrs')['account_codes'][Account::RECEIVABLE] + 2, $account->code);
 
         // Different entity resets the account code
+        $entity = factory(Entity::class)->create();
+        $this->setEntityContext($entity);
+        $currency = factory(Currency::class)->create([
+            'entity_id' => $entity->id,
+        ]);
+        $entity->currency_id = $currency->id;
+        $entity->save();
+
         $account = new Account([
             'name' => $this->faker->name,
             'account_type' => Account::OPERATING_REVENUE,
-            'entity_id' => factory(Entity::class)->create()->id
+            'entity_id' => $entity->id
         ]);
         $account->save();
 

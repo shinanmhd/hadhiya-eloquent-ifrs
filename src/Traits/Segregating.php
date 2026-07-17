@@ -10,13 +10,10 @@
 
 namespace IFRS\Traits;
 
-use Illuminate\Support\Facades\Auth;
-
-use IFRS\Models\Entity;
-
+use IFRS\Context\EntityContext;
+use IFRS\Exceptions\EntityContextMismatch;
 use IFRS\Scopes\EntityScope;
-
-use IFRS\Exceptions\UnauthorizedUser;
+use IFRS\Models\Entity;
 
 trait Segregating
 {
@@ -34,14 +31,18 @@ trait Segregating
 
         static::creating(
             function ($model) {
+                $entityId = app(EntityContext::class)->requireEntity()->getKey();
 
-                // only users can be created without requiring to be logged on
-//                if (!Auth::check() && !is_a($model, config('ifrs.user_model'))) {
-//                    throw new UnauthorizedUser();
-//                }
-
-                if (Auth::check() && is_null($model->entity_id)) {
-                    $model->entity_id = Auth::user()->entity->id;
+                if (is_null($model->entity_id)) {
+                    $model->entity_id = $entityId;
+                } elseif ((string) $model->entity_id !== (string) $entityId) {
+                    throw new EntityContextMismatch(
+                        sprintf(
+                            'Model entity [%s] does not match active accounting entity [%s].',
+                            $model->entity_id,
+                            $entityId
+                        )
+                    );
                 }
             }
         );

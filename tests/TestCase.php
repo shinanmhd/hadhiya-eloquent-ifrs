@@ -13,7 +13,9 @@ use IFRS\User;
 use IFRS\IFRSServiceProvider;
 
 use IFRS\Models\Currency;
+use IFRS\Models\Entity;
 use IFRS\Models\ReportingPeriod;
+use IFRS\Tests\Support\TestEntityResolver;
 
 abstract class TestCase extends Orchestra
 {
@@ -23,6 +25,7 @@ abstract class TestCase extends Orchestra
         parent::setUp();
 
         Config::set('ifrs.user_model', User::class);
+        Config::set('ifrs.entity_context.resolver', TestEntityResolver::class);
 
         $this->loadMigrationsFrom(__DIR__ . '/../database/migrations');
 
@@ -30,6 +33,8 @@ abstract class TestCase extends Orchestra
 
         $user = factory(User::class)->create();
         $this->be($user);
+
+        TestEntityResolver::setEntity($user->entity);
 
         $currency = factory(Currency::class)->create();
 
@@ -43,6 +48,19 @@ abstract class TestCase extends Orchestra
             "calendar_year" => date("Y"),
             "entity_id" => $user->entity->id,
         ]);
+    }
+
+    protected function tearDown(): void
+    {
+        TestEntityResolver::setEntity(null);
+
+        parent::tearDown();
+    }
+
+    protected function setEntityContext(Entity $entity): void
+    {
+        TestEntityResolver::setEntity($entity);
+        $this->app->forgetScopedInstances();
     }
 
     /**
