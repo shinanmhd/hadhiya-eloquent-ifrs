@@ -90,7 +90,7 @@ class ReportingPeriod extends Model implements Segregatable, Recyclable
      * @param string|Carbon $date
      * @return ReportingPeriod
      */
-    public static function getPeriod($date = null, Entity $entity = null)
+    public static function getPeriod($date = null, ?Entity $entity = null)
     {
         if (is_null($entity)) {
             $entity = app(EntityContext::class)->requireEntity();
@@ -113,7 +113,7 @@ class ReportingPeriod extends Model implements Segregatable, Recyclable
      *
      * @return int
      */
-    public static function year($date = null, Entity $entity = null)
+    public static function year($date = null, ?Entity $entity = null)
     {
         if (is_null($entity)) {
             $entity = app(EntityContext::class)->requireEntity();
@@ -220,7 +220,7 @@ class ReportingPeriod extends Model implements Segregatable, Recyclable
      *
      * @return array $transactions
      */
-    public function prepareBalancesTranslation($forexAccountId, int $accountId = null): array
+    public function prepareBalancesTranslation($forexAccountId, ?int $accountId = null): array
     {
 
         if (Account::find($forexAccountId)->account_type != Account::EQUITY) {
@@ -309,7 +309,7 @@ class ReportingPeriod extends Model implements Segregatable, Recyclable
      *
      * @return Carbon
      */
-    public static function periodEnd($date = null, Entity $entity = null)
+    public static function periodEnd($date = null, ?Entity $entity = null)
     {
         return ReportingPeriod::periodStart($date, $entity)
             ->addYear()
@@ -321,7 +321,7 @@ class ReportingPeriod extends Model implements Segregatable, Recyclable
      *
      * @return Carbon $date
      */
-    public static function periodStart($date = null, Entity $entity = null)
+    public static function periodStart($date = null, ?Entity $entity = null)
     {
         if (is_null($entity)) {
             $entity = app(EntityContext::class)->requireEntity();
