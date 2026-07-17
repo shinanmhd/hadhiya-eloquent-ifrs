@@ -15,8 +15,8 @@ use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Support\Facades\Auth;
 
+use IFRS\Context\EntityContext;
 use IFRS\Interfaces\Recyclable;
 use IFRS\Interfaces\Segregatable;
 
@@ -147,7 +147,7 @@ class Account extends Model implements Recyclable, Segregatable
     public static function openingBalances(int $year, Entity $entity = null)
     {
         if (is_null($entity)) {
-            $entity = Auth::user()->entity;
+            $entity = app(EntityContext::class)->requireEntity();
         }
 
         $accounts = collect([]);
@@ -187,7 +187,7 @@ class Account extends Model implements Recyclable, Segregatable
     {
 
         if (is_null($entity)) {
-            $entity = Auth::user()->entity;
+            $entity = app(EntityContext::class)->requireEntity();
         }
 
         $balances = ['sectionOpeningBalance' => 0, 'sectionClosingBalance' => 0, 'sectionMovement' => 0, 'sectionCategories' => []];
@@ -522,11 +522,7 @@ class Account extends Model implements Recyclable, Segregatable
     public function save(array $options = []): bool
     {
 
-        if (Auth::user()) {
-            $entity = Auth::user()->entity;
-        } else {
-            $entity = Entity::where('id', '=', $this->entity_id)->first();
-        }
+        $entity = app(EntityContext::class)->requireEntity();
 
         if (!isset($this->currency_id)) {
             $this->currency_id = $entity->currency_id;

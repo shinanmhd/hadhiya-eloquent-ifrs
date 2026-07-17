@@ -10,10 +10,10 @@
 
 namespace IFRS\Models;
 
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
+use IFRS\Context\EntityContext;
 use IFRS\Reports\IncomeStatement;
 
 use IFRS\Interfaces\Clearable;
@@ -267,11 +267,7 @@ class Balance extends Model implements Recyclable, Clearable, Segregatable
      */
     public function save(array $options = []): bool
     {
-        if (is_null($this->entity_id)) {
-            $entity = Auth::user()->entity;
-        } else {
-            $entity = Entity::where('id', '=', $this->entity_id)->first();
-        }
+        $entity = app(EntityContext::class)->requireEntity();
 
         if (!is_null($entity)) {
             $reportingPeriod = $entity->current_reporting_period;

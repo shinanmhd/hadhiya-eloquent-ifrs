@@ -14,6 +14,7 @@ use Carbon\Carbon;
 
 use Illuminate\Support\Facades\Auth;
 
+use IFRS\Context\EntityContext;
 use IFRS\Models\RecycledObject;
 
 trait Recycling
@@ -37,16 +38,16 @@ trait Recycling
                         $model->forceDeleting = false;
                     } else {
                         $user = Auth::user();
-                        if ($user->entity) {
-                            RecycledObject::create(
-                                [
-                                    'user_id' => $user->id,
-                                    'entity_id' => $user->entity->id,
-                                    'recyclable_id' => $model->id,
-                                    'recyclable_type' => static::class,
-                                ]
-                            );
-                        }
+                        $entity = app(EntityContext::class)->requireEntity();
+
+                        RecycledObject::create(
+                            [
+                                'user_id' => $user->id,
+                                'entity_id' => $entity->getKey(),
+                                'recyclable_id' => $model->id,
+                                'recyclable_type' => static::class,
+                            ]
+                        );
                     }
                 }
             }
