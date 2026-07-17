@@ -52,6 +52,7 @@ class RecycledObjectTest extends TestCase
         $user->save();
 
         $this->be($user);
+        $this->setEntityContext($user->entity);
 
         $this->assertEquals(count(RecycledObject::all()), 3);
     }

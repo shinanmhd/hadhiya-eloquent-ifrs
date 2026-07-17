@@ -13,6 +13,7 @@ use IFRS\User;
 use IFRS\IFRSServiceProvider;
 
 use IFRS\Models\Currency;
+use IFRS\Models\Entity;
 use IFRS\Models\ReportingPeriod;
 use IFRS\Tests\Support\TestEntityResolver;
 
@@ -54,6 +55,12 @@ abstract class TestCase extends Orchestra
         TestEntityResolver::setEntity(null);
 
         parent::tearDown();
+    }
+
+    protected function setEntityContext(Entity $entity): void
+    {
+        TestEntityResolver::setEntity($entity);
+        $this->app->forgetScopedInstances();
     }
 
     /**

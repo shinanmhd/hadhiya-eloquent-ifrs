@@ -233,6 +233,7 @@ class AccountBalanceTest extends TestCase
         $user->save();
 
         $this->be($user);
+        $this->setEntityContext($newEntity);
 
         $newEntity->currency_id = factory(Currency::class)->create()->id;
         $newEntity->save();

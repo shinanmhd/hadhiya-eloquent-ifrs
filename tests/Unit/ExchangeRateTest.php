@@ -55,6 +55,7 @@ class ExchangeRateTest extends TestCase
         $user->save();
 
         $this->be($user);
+        $this->setEntityContext($user->entity);
 
         $exchangeRate = new ExchangeRate([
             'valid_from' => Carbon::now(),
@@ -66,7 +67,9 @@ class ExchangeRateTest extends TestCase
 
         $this->assertEquals(count(ExchangeRate::all()), 1);
 
-        $this->be(User::withoutGlobalScopes()->find(1));
+        $baseUser = User::withoutGlobalScopes()->find(1);
+        $this->be($baseUser);
+        $this->setEntityContext($baseUser->entity);
         $this->assertEquals(count(ExchangeRate::all()), 0);
     }
 
